@@ -3,8 +3,20 @@
  * 越山对话ai - 模型管理后台
  */
 
-require_once 'includes/auth.php';
 require_once 'includes/config.php';
+require_once 'includes/auth.php';
+require_once 'includes/security.php';
+
+// 后台二次认证：未通过 admin 验证时拦截所有业务操作
+if (!is_admin()) {
+    $admin_login_result = handle_admin_login();
+    if ($admin_login_result === true) {
+        header("Location: kjzz025247.php");
+        exit;
+    }
+    render_admin_login(is_string($admin_login_result) ? $admin_login_result : '');
+    exit;
+}
 
 $message = "";
 
@@ -15,42 +27,46 @@ if (isset($_POST['action'])) {
     }
     if ($_POST['action'] === 'save') {
         $index = $_POST['edit_index'] ?? '';
-        $new_key = $_POST['api_key'];
+        $new_key = $_POST['api_key'] ?? '';
         
         // 如果输入的是脱敏后的星号且是编辑模式，则保留原密钥
         if ($index !== '' && $new_key === '********') {
-            $new_key = $models[$index]['api_key'];
+            $new_key = $models[$index]['api_key'] ?? '';
         }
 
-        $api_url = $_POST['api_url'];
-        // 基础 SSRF 防御：确保 URL 以 http 或 https 开头，且不指向本地地址
-        if (!preg_match('/^https?:\/\//i', $api_url) || preg_match('/localhost|127\.0\.0\.1|192\.168\.|10\./i', $api_url)) {
-            $message = "错误：无效或受限的 API 地址。";
+        $api_url = $_POST['api_url'] ?? '';
+        // SSRF 防御：白名单校验，仅允许公网 http/https 地址，拒绝内网/保留/云元数据端点
+        if (!is_safe_url($api_url)) {
+            $message = "错误：无效或受限的 API 地址（禁止指向内网、本地或云元数据端点）。";
         } else {
             $new_model = [
-                'display_name' => $_POST['display_name'],
-                'model_id' => $_POST['model_id'],
+                'display_name' => $_POST['display_name'] ?? '',
+                'model_id' => $_POST['model_id'] ?? '',
                 'api_url' => $api_url,
                 'api_key' => $new_key
             ];
         
-        if ($index !== '') {
-            $models[$index] = $new_model;
-            $message = "模型已更新！";
-        } else {
-            $models[] = $new_model;
-            $message = "新模型已添加！";
-        }
-            file_put_contents($models_file, json_encode(array_values($models), JSON_PRETTY_PRINT));
+            if ($index !== '' && isset($models[$index])) {
+                $models[$index] = $new_model;
+                $message = "模型已更新！";
+            } else {
+                $models[] = $new_model;
+                $message = "新模型已添加！";
+            }
+            file_put_contents($models_file, json_encode(array_values($models), JSON_PRETTY_PRINT), LOCK_EX);
             
-            // 刷新模型列表
-            $models = json_decode(file_get_contents($models_file), true);
+            // 刷新模型列表（load_models 内部按 filemtime 判失效，写入后自动重读缓存）
+            $models = load_models($models_file);
         }
     } elseif ($_POST['action'] === 'delete') {
-        $index = intval($_POST['index']);
-        array_splice($models, $index, 1);
-        file_put_contents($models_file, json_encode(array_values($models), JSON_PRETTY_PRINT));
-        $message = "模型已删除！";
+        $index = intval($_POST['index'] ?? -1);
+        if (isset($models[$index])) {
+            array_splice($models, $index, 1);
+            file_put_contents($models_file, json_encode(array_values($models), JSON_PRETTY_PRINT), LOCK_EX);
+            $message = "模型已删除！";
+        } else {
+            $message = "删除失败：未找到该模型。";
+        }
     }
 }
 
