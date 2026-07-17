@@ -140,9 +140,10 @@ main {
 .welcome { text-align: left; margin-top: 10vh; }
 .welcome h1 {
     font-size: 44px;
-    background: var(--logo-gradient);
+    background: linear-gradient(74deg, #4285f4 0, #9b72cb 9%, #d96570 20%, #d96570 24%, #9b72cb 35%, #4285f4 44%, #9b72cb 50%, #d96570 56%, #131314 75%, #131314 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
     font-weight: 500;
 }
 
@@ -151,11 +152,16 @@ main {
 footer {
     padding: 12px 20px;
     background: var(--bg-color);
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
     border-top: 1px solid #f0f0f0;
+    width: 100%;
     padding-bottom: env(safe-area-inset-bottom, 12px);
 }
 
-.input-wrapper { max-width: 800px; margin: 0 auto; }
+.input-wrapper { max-width: 800px; margin: 0 auto; position: relative; width: 100%; }
 .model-selector { margin-bottom: 8px; display: flex; justify-content: center; }
 
 select {
@@ -165,6 +171,9 @@ select {
     border-radius: 12px;
     font-size: 13px;
     color: var(--text-sub);
+    outline: none;
+    cursor: pointer;
+    max-width: 100%;
 }
 
 .input-box {
@@ -174,17 +183,25 @@ select {
     display: flex;
     align-items: center;
     gap: 8px;
+    transition: box-shadow 0.2s;
+    overflow: hidden;
+    width: 100%;
 }
 
 textarea {
-    flex: 1;
+    flex: 1 1 0;
     border: none;
     background: transparent;
     resize: none;
     padding: 10px 0;
     font-size: 16px;
+    line-height: 1.5;
     outline: none;
     max-height: 150px;
+    font-family: inherit;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
 }
 
 .send-btn {
@@ -192,6 +209,12 @@ textarea {
     border: none;
     color: var(--accent-blue);
     cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+    flex-shrink: 0;
 }
 
 @media (max-width: 600px) {

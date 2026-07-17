@@ -3,9 +3,25 @@
  * 越山对话ai - API 处理逻辑
  */
 
+require_once __DIR__ . '/security.php';
+
 function call_ai_api($selected_model, $history) {
+    $api_url = $selected_model['api_url'] ?? '';
+
+    // SSRF 纵深防御：请求前解析并校验目标 IP
+    $safe_ip = resolve_safe_ip($api_url);
+    if ($safe_ip === false) {
+        return ['error' => "目标 API 地址无效或被禁止访问。"];
+    }
+
+    // 用校验过的 IP 固定 curl 解析：省去 curl 内部重复 DNS 查询，并彻底阻断 DNS rebinding
+    $host = parse_url($api_url, PHP_URL_HOST);
+    $port = parse_url($api_url, PHP_URL_PORT) ?: (parse_url($api_url, PHP_URL_SCHEME) === 'https' ? 443 : 80);
+    $resolve_line = "$host:$port:$safe_ip";
+
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $selected_model['api_url']);
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RESOLVE, [$resolve_line]);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     
@@ -24,6 +40,8 @@ function call_ai_api($selected_model, $history) {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
     curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    // 禁止跟随重定向，防止通过 302 跳转绕过 SSRF 校验访问内网/云元数据端点
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
     
     $response = curl_exec($ch);
     $err = curl_error($ch);

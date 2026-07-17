@@ -4,8 +4,8 @@
  * 主入口文件
  */
 
-require_once 'includes/auth.php';
 require_once 'includes/config.php';
+require_once 'includes/auth.php';
 require_once 'includes/api_handler.php';
 
 $history = [];
@@ -47,6 +47,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($user_input !== '' && $selected_model) {
         $history[] = ['role' => 'user', 'content' => $user_input];
+        // 释放 session 锁：对话流程不再写 session，尽早关闭以避免同用户并发请求串行化
+        session_write_close();
         $result = call_ai_api($selected_model, $history);
         
         if (isset($result['error'])) {

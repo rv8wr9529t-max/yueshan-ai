@@ -3,12 +3,11 @@ Options -Indexes
 
 # 保护敏感文件
 <FilesMatch "^\.env|models\.json|.*\.example$">
-    Order allow,deny
-    Deny from all
+    Require all denied
 </FilesMatch>
 
-# 保护 includes 目录
-<Directory "includes">
-    Order allow,deny
-    Deny from all
-</Directory>
+# 保护 includes 目录（<Directory> 不能用于 .htaccess，改用重写规则拦截直接访问）
+RewriteEngine On
+RewriteRule ^includes/ - [F,L]
+# 拦截 data 目录（频率限制计数文件所在）
+RewriteRule ^data/ - [F,L]
