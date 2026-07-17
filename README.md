@@ -38,8 +38,11 @@
 
 ## 开发者与鸣谢
 
-- 本项目由 **mountain** 开发。
-- 特别感谢 GitHub 用户 [@Jemesnb](https://github.com/Jemesnb) 提供的深度安全审计与专业改进建议，协助项目完成了从教学示例到生产级安全标准的加固。
+- **项目所有者**: **mountain**
+- **核心贡献者**: GitHub 用户 [@Jemesnb](https://github.com/Jemesnb)
+  - 提供了深度安全审计与专业改进建议。
+  - 通过 Pull Request 贡献了关键的安全加固、性能优化及 UI 修复代码。
+  - 协助项目完成了从教学示例到生产级安全标准的蜕变。
 
 ## 许可证
 
