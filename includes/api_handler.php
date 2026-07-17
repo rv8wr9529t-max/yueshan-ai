@@ -37,6 +37,10 @@ function call_ai_api($selected_model, $history) {
     if (isset($res_data['choices'][0]['message']['content'])) {
         return ['content' => $res_data['choices'][0]['message']['content']];
     } else {
-        return ['error' => "接口错误: " . ($res_data['error']['message'] ?? "未知错误")];
+        // 对错误消息进行脱敏处理，防止泄露 API Key 或后端内部信息
+        $raw_error = $res_data['error']['message'] ?? "未知错误";
+        // 简单屏蔽可能包含的敏感信息（如 key 的末尾）
+        $safe_error = preg_replace('/sk-[a-zA-Z0-9]{10,}/', 'sk-***', $raw_error);
+        return ['error' => "接口请求失败，请检查配置或稍后再试。 (详情: " . htmlspecialchars(mb_substr($safe_error, 0, 100)) . ")"];
     }
 }

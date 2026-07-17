@@ -20,10 +20,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         die("请求过于频繁，请稍后再试。");
     }
     $user_input = trim($_POST['user_input'] ?? '');
-    $history_json = $_POST['history_json'] ?? '[]';
-    $history = json_decode($history_json, true) ?: [];
+    // 限制用户输入长度，防止恶意超长文本
+    if (mb_strlen($user_input) > 2000) {
+        $user_input = mb_substr($user_input, 0, 2000);
+    }
     
-    // 限制历史记录长度，仅保留最近 10 条对话，防止上下文过长导致的安全与费用风险
+    $history_json = $_POST['history_json'] ?? '[]';
+    $raw_history = json_decode($history_json, true) ?: [];
+    $history = [];
+    
+    // 对历史记录进行严格白名单校验
+    foreach ($raw_history as $msg) {
+        if (isset($msg['role'], $msg['content']) && in_array($msg['role'], ['user', 'assistant'])) {
+            // 限制单条历史消息长度
+            $content = mb_substr($msg['content'], 0, 2000);
+            $history[] = ['role' => $msg['role'], 'content' => $content];
+        }
+    }
+    
+    // 限制历史记录条数，仅保留最近 10 条
     if (count($history) > 10) {
         $history = array_slice($history, -10);
     }

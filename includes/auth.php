@@ -29,20 +29,47 @@ function verify_csrf_token($token) {
 }
 
 /**
- * 基础频率限制 (防止暴力请求)
- * 每 2 秒允许一次请求
+ * 获取用户真实 IP
  */
-function check_rate_limit() {
-    $now = time();
-    $last_time = $_SESSION['last_request_time'] ?? 0;
-    if ($now - $last_time < 2) {
-        return false;
+function get_client_ip() {
+    return $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+}
+
+/**
+ * 基础频率限制 (基于 IP，防止暴力请求)
+ * 每 2 秒允许一次请求。由于沙盒环境限制，暂使用文件系统模拟简单的 IP 计数器。
+ */
+function check_rate_limit($action = 'default') {
+    $ip = get_client_ip();
+    $limit_dir = __DIR__ . '/../data/limits';
+    if (!is_dir($limit_dir)) {
+        @mkdir($limit_dir, 0777, true);
     }
-    $_SESSION['last_request_time'] = $now;
+    $limit_file = $limit_dir . '/' . md5($ip . $action);
+    $now = time();
+    
+    if (file_exists($limit_file)) {
+        $last_time = (int)file_get_contents($limit_file);
+        if ($now - $last_time < 2) {
+            return false;
+        }
+    }
+    
+    file_put_contents($limit_file, $now);
     return true;
 }
 
-$admin_pass = getenv('ADMIN_PASSWORD') ?: "[REDACTED]"; // 优先从环境变量读取，默认为 [REDACTED]
+/**
+ * 获取管理员密码 (延迟加载以确保环境变量已注入)
+ */
+function get_admin_password() {
+    $pass = getenv('ADMIN_PASSWORD');
+    if (!$pass) {
+        // 如果环境变量未设置，出于安全考虑，禁止登录
+        return false;
+    }
+    return $pass;
+}
 
 // 处理注销
 if (isset($_GET['logout'])) {
@@ -54,12 +81,18 @@ if (isset($_GET['logout'])) {
 // 检查登录状态
 if (!isset($_SESSION['logged_in'])) {
     if (isset($_POST['login_pass'])) {
-        if ($_POST['login_pass'] === $admin_pass) {
-            $_SESSION['logged_in'] = true;
-            header("Location: " . $_SERVER['PHP_SELF']);
-            exit;
+        if (!check_rate_limit('login')) {
+            $login_error = "请求过于频繁，请稍后再试。";
         } else {
-            $login_error = "密码错误！";
+        $admin_pass = get_admin_password();
+        if ($admin_pass !== false && hash_equals($admin_pass, $_POST['login_pass'])) {
+                session_regenerate_id(true); // 修复 Session Fixation
+                $_SESSION['logged_in'] = true;
+                header("Location: " . $_SERVER['PHP_SELF']);
+                exit;
+            } else {
+                $login_error = $admin_pass === false ? "系统配置错误：未设置管理员密码。" : "密码错误！";
+            }
         }
     }
     ?>
