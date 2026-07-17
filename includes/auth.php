@@ -3,7 +3,30 @@
  * 越山对话ai - 统一身份验证
  */
 
+// 加固 Session 安全配置
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'Lax');
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
 session_start();
+
+/**
+ * 生成并获取 CSRF Token
+ */
+function get_csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * 校验 CSRF Token
+ */
+function verify_csrf_token($token) {
+    return !empty($token) && hash_equals($_SESSION['csrf_token'] ?? '', $token);
+}
 
 $admin_pass = getenv('ADMIN_PASSWORD') ?: "[REDACTED]"; // 优先从环境变量读取，默认为 [REDACTED]
 

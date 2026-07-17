@@ -13,6 +13,9 @@ $error_msg = "";
 
 // 处理表单提交
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        die("CSRF 校验失败，请刷新页面重试。");
+    }
     $user_input = trim($_POST['user_input'] ?? '');
     $history_json = $_POST['history_json'] ?? '[]';
     $history = json_decode($history_json, true) ?: [];
@@ -100,6 +103,7 @@ if (isset($_GET['clear'])) {
                 </div>
                 <div class="input-box">
                     <textarea name="user_input" id="userInput" placeholder="在这里输入内容..." required rows="1"></textarea>
+                    <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                     <input type="hidden" name="history_json" value='<?php echo json_encode($history, JSON_HEX_APOS | JSON_HEX_QUOT); ?>'>
                     <button type="submit" class="send-btn" id="sendBtn">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>

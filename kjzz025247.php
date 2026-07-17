@@ -10,6 +10,9 @@ $message = "";
 
 // 处理添加或修改
 if (isset($_POST['action'])) {
+    if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
+        die("CSRF 校验失败，请重试。");
+    }
     if ($_POST['action'] === 'save') {
         $index = $_POST['edit_index'] ?? '';
         $new_key = $_POST['api_key'];
@@ -88,6 +91,7 @@ if (isset($_GET['edit'])) {
 
         <form method="POST" action="kjzz025247.php">
             <input type="hidden" name="action" value="save">
+            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
             <input type="hidden" name="edit_index" value="<?php echo $edit_index; ?>">
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -131,6 +135,7 @@ if (isset($_GET['edit'])) {
                         <a href="?edit=<?php echo $index; ?>" style="color: #007bff; text-decoration: none; font-size: 0.8rem; margin-right: 10px;">编辑</a>
                         <form method="POST" style="display:inline;" onsubmit="return confirm('确定要删除吗？');">
                             <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="csrf_token" value="<?php echo get_csrf_token(); ?>">
                             <input type="hidden" name="index" value="<?php echo $index; ?>">
                             <button type="submit" class="delete">删除</button>
                         </form>
