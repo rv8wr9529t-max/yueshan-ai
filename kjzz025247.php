@@ -5,6 +5,59 @@
 
 require_once 'includes/config.php';
 
+session_start();
+
+// 简单的登录验证
+$admin_pass = "[REDACTED]"; // 默认密码，建议用户修改
+
+if (isset($_GET['logout'])) {
+    session_destroy();
+    header("Location: kjzz025247.php");
+    exit;
+}
+
+if (!isset($_SESSION['logged_in'])) {
+    if (isset($_POST['login_pass'])) {
+        if ($_POST['login_pass'] === $admin_pass) {
+            $_SESSION['logged_in'] = true;
+            header("Location: kjzz025247.php");
+            exit;
+        } else {
+            $login_error = "密码错误！";
+        }
+    }
+    ?>
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>登录 - 越山对话ai 管理后台</title>
+        <style>
+            body { font-family: -apple-system, sans-serif; background: #f0f2f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+            .login-box { background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); width: 300px; text-align: center; }
+            h2 { margin-bottom: 20px; font-size: 1.2rem; color: #333; }
+            input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+            button { width: 100%; padding: 10px; background: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+            .error { color: #dc3545; font-size: 0.8rem; margin-bottom: 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="login-box">
+            <h2>管理后台登录</h2>
+            <?php if (isset($login_error)): ?><div class="error"><?php echo $login_error; ?></div><?php endif; ?>
+            <form method="POST">
+                <input type="password" name="login_pass" placeholder="请输入管理密码" required>
+                <button type="submit">登录</button>
+            </form>
+            <p style="font-size: 0.7rem; color: #999; margin-top: 15px;">由 mountain 开发</p>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
 $message = "";
 
 // 处理添加或修改
@@ -66,7 +119,10 @@ if (isset($_GET['edit'])) {
 </head>
 <body>
     <div class="container">
-        <div class="nav"><a href="index.php">← 返回对话页</a></div>
+        <div class="nav" style="display: flex; justify-content: space-between;">
+            <a href="index.php">← 返回对话页</a>
+            <a href="?logout=1" style="color: #dc3545;">退出登录</a>
+        </div>
         <h1>越山对话ai 模型管理后台</h1>
         
         <?php if ($message): ?><div class="msg"><?php echo $message; ?></div><?php endif; ?>
