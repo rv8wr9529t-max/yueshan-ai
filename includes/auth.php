@@ -28,6 +28,20 @@ function verify_csrf_token($token) {
     return !empty($token) && hash_equals($_SESSION['csrf_token'] ?? '', $token);
 }
 
+/**
+ * 基础频率限制 (防止暴力请求)
+ * 每 2 秒允许一次请求
+ */
+function check_rate_limit() {
+    $now = time();
+    $last_time = $_SESSION['last_request_time'] ?? 0;
+    if ($now - $last_time < 2) {
+        return false;
+    }
+    $_SESSION['last_request_time'] = $now;
+    return true;
+}
+
 $admin_pass = getenv('ADMIN_PASSWORD') ?: "[REDACTED]"; // 优先从环境变量读取，默认为 [REDACTED]
 
 // 处理注销

@@ -22,12 +22,17 @@ if (isset($_POST['action'])) {
             $new_key = $models[$index]['api_key'];
         }
 
-        $new_model = [
-            'display_name' => $_POST['display_name'],
-            'model_id' => $_POST['model_id'],
-            'api_url' => $_POST['api_url'],
-            'api_key' => $new_key
-        ];
+        $api_url = $_POST['api_url'];
+        // 基础 SSRF 防御：确保 URL 以 http 或 https 开头，且不指向本地地址
+        if (!preg_match('/^https?:\/\//i', $api_url) || preg_match('/localhost|127\.0\.0\.1|192\.168\.|10\./i', $api_url)) {
+            $message = "错误：无效或受限的 API 地址。";
+        } else {
+            $new_model = [
+                'display_name' => $_POST['display_name'],
+                'model_id' => $_POST['model_id'],
+                'api_url' => $api_url,
+                'api_key' => $new_key
+            ];
         
         if ($index !== '') {
             $models[$index] = $new_model;
@@ -36,10 +41,11 @@ if (isset($_POST['action'])) {
             $models[] = $new_model;
             $message = "新模型已添加！";
         }
-        file_put_contents($models_file, json_encode(array_values($models), JSON_PRETTY_PRINT));
-        
-        // 刷新模型列表
-        $models = json_decode(file_get_contents($models_file), true);
+            file_put_contents($models_file, json_encode(array_values($models), JSON_PRETTY_PRINT));
+            
+            // 刷新模型列表
+            $models = json_decode(file_get_contents($models_file), true);
+        }
     } elseif ($_POST['action'] === 'delete') {
         $index = intval($_POST['index']);
         array_splice($models, $index, 1);

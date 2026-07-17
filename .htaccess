@@ -1,0 +1,14 @@
+# 禁用目录浏览
+Options -Indexes
+
+# 保护敏感文件
+<FilesMatch "^\.env|models\.json|.*\.example$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 保护 includes 目录
+<Directory "includes">
+    Order allow,deny
+    Deny from all
+</Directory>

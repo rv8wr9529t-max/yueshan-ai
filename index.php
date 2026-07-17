@@ -16,9 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf_token($_POST['csrf_token'] ?? '')) {
         die("CSRF 校验失败，请刷新页面重试。");
     }
+    if (!check_rate_limit()) {
+        die("请求过于频繁，请稍后再试。");
+    }
     $user_input = trim($_POST['user_input'] ?? '');
     $history_json = $_POST['history_json'] ?? '[]';
     $history = json_decode($history_json, true) ?: [];
+    
+    // 限制历史记录长度，仅保留最近 10 条对话，防止上下文过长导致的安全与费用风险
+    if (count($history) > 10) {
+        $history = array_slice($history, -10);
+    }
     $model_index = intval($_POST['model_index'] ?? 0);
     $selected_model = $models[$model_index] ?? null;
 
